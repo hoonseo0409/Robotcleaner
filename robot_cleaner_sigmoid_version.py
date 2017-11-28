@@ -43,16 +43,7 @@ walk_average=0.
 #rate=0.9
 #walk_lst=[]
 #WalkOfAction_lst=[]
-"""
-def Initialize(Q_table):
 
-   for xp in range(5):
-      Q_table.append([])
-      for yp in range(5):
-         Q_table[xp].append([])
-         for direc in range(4):
-            Q_table[xp][yp].append(1)
-"""
 
 
 def print_info():   #미로판을 출력함
@@ -76,15 +67,7 @@ def print_info():   #미로판을 출력함
       s= s+ "\n"
 
    return s
-"""
-def initialize_Maze():
-    Maze=[[0, 0, 0, 1, 0],
-          [0, 1, 0, 0, 0],
-          [0, 1, 1, 1, 0],
-          [0, 0, 0, 1, 1],
-          [1, 1, 0, 0, 0]]
-    Maze[Start[0]][Start[1]] = 2
-"""
+
 
 def Move(Maze, Qt_lst, Mz_lst, Player):  #Qt_lst에 저장된 확률을 바탕으로 어떤 방향으로 움직일지 결정함
 
@@ -268,29 +251,7 @@ def Learning(Tragectory, MoveDirection, Qt_lst, MzIndex_lst, walk_average, walk)
         index=MzIndex_lst[-2]   #Player의 현재 위치에서의 맵 번호
         #next_index = MzIndex_lst[-1]    #플레이어의 다음 위치에서의 맵 번호
         #remainwalk=Remainwalk_lst[-1]
-        """[nx, ny] = [0, 0]
-        if (direc == 0):    #Player가 현재 위치로 오기 위해 선택했던 방향이 0이면 플레이어 위치의 [0]값에서 1을 뺀걸 nx에 저장함
-            [nx, ny] = [xp - 1, yp]
-        elif (direc == 1):
-            [nx, ny] = [xp + 1, yp]
-        elif (direc == 2):
-            [nx, ny] = [xp, yp - 1]
-        elif (direc == 3):
-            [nx, ny] = [xp, yp + 1]
-        else:
-            print "Error"
 
-        dot_max = -1
-
-        for x in range(4):
-            if (Qt_lst[next_index][nx][ny][x] > dot_max):
-                dot_max = Qt_lst[next_index][nx][ny][x]    #nx ny의 위치에서 4가지 방향으로의 Q값중 가장 큰 값을 dot_max에 저장
-        #Qt_lst[index][xp][yp][direc] += l_rate * (gamma * Qt_lst[next_index][nx][ny])
-        Qt_lst[index][xp][yp][direc] += l_rate*(gamma * dot_max - Qt_lst[index][xp][yp][direc])    #Player의 현재위치에서 현재위치로 오기위해 선택했던 방향에 대한 Q값을 gamma에 dot_max 값에서 뺀 값을 다시 Q값에 저장함
-
-        if (chk_count == 0):    #첫 단계에서 Q값을 Reward만큼 증가시킴
-            Qt_lst[index][xp][yp][direc] += l_rate*Reward
-            chk_count += 1"""
 
 #"""+(abs(walk_average-walk)/walk)*0.2*const"""*(13**stage)/100
 

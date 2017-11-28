@@ -26,16 +26,7 @@ Qt_lst=[]
 Mz_lst=[]
 MzIndex_lst=[]
 
-"""
-def Initialize(Q_table):
 
-	for xp in range(5):
-		Q_table.append([])
-		for yp in range(5):
-			Q_table[xp].append([])
-			for direc in range(4):
-				Q_table[xp][yp].append(1)
-"""
 
 
 def print_info():   #미로판을 출력함
@@ -59,15 +50,7 @@ def print_info():   #미로판을 출력함
 		s= s+ "\n"
 
 	return s
-"""
-def initialize_Maze():
-    Maze=[[0, 0, 0, 1, 0],
-          [0, 1, 0, 0, 0],
-          [0, 1, 1, 1, 0],
-          [0, 0, 0, 1, 1],
-          [1, 1, 0, 0, 0]]
-    Maze[Start[0]][Start[1]] = 2
-"""
+
 
 def Move(Maze, Qt_lst, Mz_lst, Player):  #Qt_lst에 저장된 확률을 바탕으로 어떤 방향으로 움직일지 결정함
     if(Mz_lst.count(Maze)==0):
