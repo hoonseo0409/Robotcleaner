@@ -22,7 +22,7 @@ gamma=0.7
 Start=[0,0] #시작위치
 Before=[]   #플레이어가 직전에 지났던 위치를 여기에 저장
 BasicQt=[[[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]]
-Qt_lst=[]
+Rwrd_lst=[]
 Mz_lst=[]
 MzIndex_lst=[]
 
@@ -52,7 +52,7 @@ def print_info():   #미로판을 출력함
 	return s
 
 
-def Move(Maze, Qt_lst, Mz_lst, Player):  #Qt_lst에 저장된 확률을 바탕으로 어떤 방향으로 움직일지 결정함
+def Move(Maze, Rwrd_lst, Mz_lst, Player):  #Rwrd_lst에 저장된 확률을 바탕으로 어떤 방향으로 움직일지 결정함
     if(Mz_lst.count(Maze)==0):
         anyway=[0.25,0.5,0.75,1]
         next=-1
@@ -67,12 +67,12 @@ def Move(Maze, Qt_lst, Mz_lst, Player):  #Qt_lst에 저장된 확률을 바탕�
         M_Prob = []
         index=Mz_lst.index(Maze)
         for x in range(4):
-            value = Qt_lst[index][Player[0]][Player[1]][x]
+            value = Rwrd_lst[index][Player[0]][Player[1]][x]
             total = total + value   #가치값을 더해서 총 가치값을 구함
 
         move_amount = 0.0
         for x in range(4):
-            value = Qt_lst[index][Player[0]][Player[1]][x]
+            value = Rwrd_lst[index][Player[0]][Player[1]][x]
             move_amount = move_amount + float(value) / float(total)
             M_Prob.append(move_amount)  #가치값을 총 가치값으로 나눠서 확률을 구해서 M_Prob에 추가함
 
@@ -217,7 +217,7 @@ def Chk_End():
         return -1;  #아니면 리워드 0.7배로 감소시키고 -1을 반환
 
 
-def Learning(Tragectory, MoveDirection, Qt_lst, MzIndex_lst, Reward, gamma):
+def Learning(Tragectory, MoveDirection, Rwrd_lst, MzIndex_lst, Reward, gamma):
     chk_count = 0
     while (1):
         [xp, yp] = Tragectory[-1]   #Player의 현재 위치를 xp와 yp에 저장
@@ -238,13 +238,13 @@ def Learning(Tragectory, MoveDirection, Qt_lst, MzIndex_lst, Reward, gamma):
 
         dot_max = -1
         for x in range(4):
-            if (Qt_lst[index][nx][ny][x] > dot_max):
-                dot_max = Qt_lst[index][nx][ny][x]    #nx ny의 위치에서 4가지 방향으로의 Q값중 가장 큰 값을 dot_max에 저장
+            if (Rwrd_lst[index][nx][ny][x] > dot_max):
+                dot_max = Rwrd_lst[index][nx][ny][x]    #nx ny의 위치에서 4가지 방향으로의 Q값중 가장 큰 값을 dot_max에 저장
 
-        Qt_lst[index][xp][yp][direc] += (gamma * dot_max - Qt_lst[index][xp][yp][direc])    #Player의 현재위치에서 현재위치로 오기위해 선택했던 방향에 대한 Q값을 gamma에 dot_max 값에서 뺀 값을 다시 Q값에 저장함
+        Rwrd_lst[index][xp][yp][direc] += (gamma * dot_max - Rwrd_lst[index][xp][yp][direc])    #Player의 현재위치에서 현재위치로 오기위해 선택했던 방향에 대한 Q값을 gamma에 dot_max 값에서 뺀 값을 다시 Q값에 저장함
 
         if (chk_count == 0):    #첫 단계에서 Q값을 Reward만큼 증가시킴
-            Qt_lst[index][xp][yp][direc] += Reward
+            Rwrd_lst[index][xp][yp][direc] += Reward
             chk_count += 1
 
         if (len(MoveDirection) < 2):    #처음 위치까지 다 학습시켰으면 Learning을 끝냄
@@ -269,11 +269,11 @@ while (1):
     Tragectory.append(add)  #add의 값, 즉 Player의 현재(=시작) 위치를 Tragectory에 저장
     walk=0
     while (1):
-        next = Move(Maze, Qt_lst, Mz_lst, Player)    #Move에서 선택된 방향을 next에 저장
+        next = Move(Maze, Rwrd_lst, Mz_lst, Player)    #Move에서 선택된 방향을 next에 저장
         add = copy.deepcopy(Maze)
         if (Mz_lst.count(add) == 0):
             Mz_lst.append(add)
-            Qt_lst.append(BasicQt)
+            Rwrd_lst.append(BasicQt)
             add2 = len(Mz_lst) - 1
             MzIndex_lst.append(add2)
         if (Mz_lst.count(add) == 1):
@@ -295,7 +295,7 @@ while (1):
             #Reward += 50
             break
     Tragectory.pop()  # We does't need last objective goal
-    Learning(Tragectory, MoveDirection, Qt_lst, MzIndex_lst, Reward, gamma)
+    Learning(Tragectory, MoveDirection, Rwrd_lst, MzIndex_lst, Reward, gamma)
     Tragectory = []
     MoveDirection = []
     Maze = copy.deepcopy(input_Maze)

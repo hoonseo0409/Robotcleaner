@@ -34,7 +34,7 @@ BasicQt=[[[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]
 
 
 #BasicQt=[[[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]]
-Qt_lst=[]
+Rwrd_lst=[]
 Mz_lst=[]
 MzIndex_lst=[]
 #l_rate=0.8
@@ -69,7 +69,7 @@ def print_info():   #미로판을 출력함
    return s
 
 
-def Move(Maze, Qt_lst, Mz_lst, Player):  #Qt_lst에 저장된 확률을 바탕으로 어떤 방향으로 움직일지 결정함
+def Move(Maze, Rwrd_lst, Mz_lst, Player):  #Rwrd_lst에 저장된 확률을 바탕으로 어떤 방향으로 움직일지 결정함
 
     if(Mz_lst.count(Maze)==0):
         anyway=[0.25,0.5,0.75,1]
@@ -85,12 +85,12 @@ def Move(Maze, Qt_lst, Mz_lst, Player):  #Qt_lst에 저장된 확률을 바탕�
         M_Prob = []
         index=Mz_lst.index(Maze)
         for x in range(4):
-            value = 1/(1+math.exp(-0.05*Qt_lst[index][Player[0]][Player[1]][x]))
+            value = 1/(1+math.exp(-0.05*Rwrd_lst[index][Player[0]][Player[1]][x]))
             total = total + value   #가치값을 더해서 총 가치값을 구함
 
         move_amount = 0.0
         for x in range(4):
-            value = 1/(1+math.exp(-0.05*Qt_lst[index][Player[0]][Player[1]][x]))
+            value = 1/(1+math.exp(-0.05*Rwrd_lst[index][Player[0]][Player[1]][x]))
             move_amount = move_amount + float(value) / float(total)
             M_Prob.append(move_amount)  #가치값을 총 가치값으로 나눠서 확률을 구해서 M_Prob에 추가함
 
@@ -235,7 +235,7 @@ def Chk_End():
         return -1;
 
 
-def Learning(Tragectory, MoveDirection, Qt_lst, MzIndex_lst, walk_average, walk):
+def Learning(Tragectory, MoveDirection, Rwrd_lst, MzIndex_lst, walk_average, walk):
 
     #chk_count = 0
     #const=1
@@ -260,17 +260,17 @@ def Learning(Tragectory, MoveDirection, Qt_lst, MzIndex_lst, walk_average, walk)
 
         bonus += ((WalkOfAction_lst[index][xp][yp][1] - remainwalk) / WalkOfAction_lst[index][xp][yp][1])"""
 
-        Qt_lst[index][xp][yp][direc] = Qt_lst[index][xp][yp][direc] + (walk_average-walk)/walk_average
+        Rwrd_lst[index][xp][yp][direc] = Rwrd_lst[index][xp][yp][direc] + (walk_average-walk)/walk_average
 #Q값에 (walk_average-walk)/walk_average 를 더해 줌으로써 평균 걸음수보다 더 많이 걷는 선택을 하게 되면 Q값을 깎아서 그 쪽으로 갈 확률을 감소시킴, 반대의 경우 증가시킴.
-        if (Qt_lst[index][xp][yp][direc] <= 0.):
-            Qt_lst[index][xp][yp][direc] = 1.
+        if (Rwrd_lst[index][xp][yp][direc] <= 0.):
+            Rwrd_lst[index][xp][yp][direc] = 1.
 #만약 Q값이 음수가 되게 되면 오류가 발생하므로 음수가 될 경우 Q값을 1로 초기화시킴
         #number+=1
         if(walk<walk_average):
-            max_q=max(Qt_lst[index][xp][yp])
-            index_max=Qt_lst[index][xp][yp].index(max_q)
+            max_q=max(Rwrd_lst[index][xp][yp])
+            index_max=Rwrd_lst[index][xp][yp].index(max_q)
             if(index_max!=direc):
-                Qt_lst[index][xp][yp][direc]+=(Qt_lst[index][xp][yp][index_max]-Qt_lst[index][xp][yp][direc])*0.001
+                Rwrd_lst[index][xp][yp][direc]+=(Rwrd_lst[index][xp][yp][index_max]-Rwrd_lst[index][xp][yp][direc])*0.001
                 #Q값이 작은 방향으로 한번 가 봤는데, walk가 줄어들었으면 최대 Q값을 0.1%정도 따라잡도록 하는 코드
 
 
@@ -313,7 +313,7 @@ iteration = 0
 Maze[Start[0]][Start[1]]=2
 add = copy.deepcopy(Maze)
 Mz_lst.append(add)
-Qt_lst.append(BasicQt)
+Rwrd_lst.append(BasicQt)
 #WalkOfAction_lst.append(BasicWalk)
 Initialize_BasicQt(Input_Maze, BasicQt)
 MzIndex_lst=[0]
@@ -334,7 +334,7 @@ while (1):
     if (iteration % 300 == 1 and iteration > 1):
         print "walk_average=%f,iteration=%d"%(walk_average,iteration)
     while (1):
-        next = Move(Maze, Qt_lst, Mz_lst, Player)    #Move에서 선택된 방향을 next에 저장
+        next = Move(Maze, Rwrd_lst, Mz_lst, Player)    #Move에서 선택된 방향을 next에 저장
         chk = Chk_Move(next)    #next에 저장된 방향을 Chk_Move에 넣음으로써 만약 가능한 방향이면 그 쪽으로 Player를 옮기고 Before도 옮기고 1을 반환함. 불가능한 방향이면 안 옮기고 -1을 반환해서 chk에 저장.
         if (chk == -1):
             continue    #불가능한 방향이면 처음으로 돌아가게 함
@@ -342,7 +342,7 @@ while (1):
         add = copy.deepcopy(Maze)
         if (Mz_lst.count(add) == 0):
             Mz_lst.append(add)
-            Qt_lst.append(BasicQt)
+            Rwrd_lst.append(BasicQt)
             #WalkOfAction_lst.append(BasicWalk)
             add2 = len(Mz_lst) - 1
             MzIndex_lst.append(add2)
@@ -367,7 +367,7 @@ while (1):
             #Reward+=(walk_average/walk)
             break
     Tragectory.pop()  # We does't need last objective goal
-    Learning(Tragectory, MoveDirection, Qt_lst, MzIndex_lst, walk_average, walk)
+    Learning(Tragectory, MoveDirection, Rwrd_lst, MzIndex_lst, walk_average, walk)
     Tragectory = []
     MoveDirection = []
     MzIndex_lst=[0]
