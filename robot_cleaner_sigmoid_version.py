@@ -70,8 +70,8 @@ def print_info():   #미로판을 출력함
 
 
 def Move(Maze, Rwrd_lst, Mz_lst, Player):  #Rwrd_lst에 저장된 확률을 바탕으로 어떤 방향으로 움직일지 결정함
-
-    if(Mz_lst.count(Maze)==0):
+    noise=random.random()
+    if(Mz_lst.count(Maze)==0 or noise<0.05):    #If The trajectory is not experienced or at probability of 5%, It walks randomly.
         anyway=[0.25,0.5,0.75,1]
         next=-1
         move=random.random()
@@ -80,7 +80,7 @@ def Move(Maze, Rwrd_lst, Mz_lst, Player):  #Rwrd_lst에 저장된 확률을 바�
                 next = x
                 break  # 다음 방향을 정함
         return next
-    elif(Mz_lst.count(Maze)==1):
+    elif(Mz_lst.count(Maze)==1):    #If you have previously experienced the trajectory
         total = 0
         M_Prob = []
         index=Mz_lst.index(Maze)
