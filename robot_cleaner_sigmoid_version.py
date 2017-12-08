@@ -21,7 +21,7 @@ MoveDirection = []  #플레이어의 이동방향이 결정될 때마다 여기�
 #gamma=0.9
 Start=[0,0] #시작위치
 Before=[]   #플레이어가 직전에 지났던 위치를 여기에 저장
-BasicQt=[[[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
+BasicRwrd=[[[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
  [[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
  [[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
  [[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
@@ -33,7 +33,7 @@ BasicQt=[[[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]
  [[0.,0.], [0.,0.], [0.,0.], [0.,0.], [0.,0.]]]"""
 
 
-#BasicQt=[[[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]]
+#BasicRwrd=[[[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]]
 Rwrd_lst=[]
 Mz_lst=[]
 MzIndex_lst=[]
@@ -259,16 +259,17 @@ def Learning(Tragectory, MoveDirection, Rwrd_lst, MzIndex_lst, walk_average, wal
         WalkOfAction_lst[index][xp][yp][0]+=1
 
         bonus += ((WalkOfAction_lst[index][xp][yp][1] - remainwalk) / WalkOfAction_lst[index][xp][yp][1])"""
-
-        Rwrd_lst[index][xp][yp][direc] = Rwrd_lst[index][xp][yp][direc] + (walk_average-walk)/walk_average
+        if(Rwrd_lst[index][xp][yp][direc] + (walk_average-walk)/walk_average>0):    #업데이트 해서 음수가 되지 않는다면
+            Rwrd_lst[index][xp][yp][direc] = Rwrd_lst[index][xp][yp][direc] + (walk_average-walk)/walk_average
 #Q값에 (walk_average-walk)/walk_average 를 더해 줌으로써 평균 걸음수보다 더 많이 걷는 선택을 하게 되면 Q값을 깎아서 그 쪽으로 갈 확률을 감소시킴, 반대의 경우 증가시킴.
-        if (Rwrd_lst[index][xp][yp][direc] <= 0.):
-            Rwrd_lst[index][xp][yp][direc] = 1.
+        """if (Rwrd_lst[index][xp][yp][direc] <= 0.):
+            Rwrd_lst[index][xp][yp][direc] = 1."""
+
 #만약 Q값이 음수가 되게 되면 오류가 발생하므로 음수가 될 경우 Q값을 1로 초기화시킴
         #number+=1
         if(walk<walk_average):
-            max_q=max(Rwrd_lst[index][xp][yp])
-            index_max=Rwrd_lst[index][xp][yp].index(max_q)
+            max_r=max(Rwrd_lst[index][xp][yp])
+            index_max=Rwrd_lst[index][xp][yp].index(max_r)
             if(index_max!=direc):
                 Rwrd_lst[index][xp][yp][direc]+=(Rwrd_lst[index][xp][yp][index_max]-Rwrd_lst[index][xp][yp][direc])*0.001
                 #Q값이 작은 방향으로 한번 가 봤는데, walk가 줄어들었으면 최대 Q값을 0.1%정도 따라잡도록 하는 코드
@@ -283,26 +284,26 @@ def Learning(Tragectory, MoveDirection, Rwrd_lst, MzIndex_lst, walk_average, wal
         MzIndex_lst.pop()
         #Remainwalk_lst.pop()
 
-def Initialize_BasicQt(Input_Maze, BasicQt):
+def Initialize_BasicRwrd(Input_Maze, BasicRwrd):
     for x in range(5):
         for y in range(5):
             if (x == 0):
-                BasicQt[0][y][0] = 0.
+                BasicRwrd[0][y][0] = 0.
             elif (x == 4):
-                BasicQt[4][y][1] = 0.
+                BasicRwrd[4][y][1] = 0.
             if (y == 0):
-                BasicQt[x][0][2] = 0.
+                BasicRwrd[x][0][2] = 0.
             elif (y == 4):
-                BasicQt[x][4][3] = 0.
+                BasicRwrd[x][4][3] = 0.
             if (Input_Maze[x][y] == 1):
                 if (x != 4):
-                    BasicQt[x + 1][y][0] = 0.
+                    BasicRwrd[x + 1][y][0] = 0.
                 if (x != 0):
-                    BasicQt[x - 1][y][1] = 0.
+                    BasicRwrd[x - 1][y][1] = 0.
                 if (y != 4):
-                    BasicQt[x][y + 1][2] = 0.
+                    BasicRwrd[x][y + 1][2] = 0.
                 if (y != 0):
-                    BasicQt[x][y - 1][3] = 0.
+                    BasicRwrd[x][y - 1][3] = 0.
 
 
 ## Code Start
@@ -313,9 +314,9 @@ iteration = 0
 Maze[Start[0]][Start[1]]=2
 add = copy.deepcopy(Maze)
 Mz_lst.append(add)
-Rwrd_lst.append(BasicQt)
+Rwrd_lst.append(BasicRwrd)
 #WalkOfAction_lst.append(BasicWalk)
-Initialize_BasicQt(Input_Maze, BasicQt)
+Initialize_BasicRwrd(Input_Maze, BasicRwrd)
 MzIndex_lst=[0]
 #stage=0
 
@@ -331,7 +332,7 @@ while (1):
     add = copy.deepcopy(Player) #Player의 현재(=시작) 위치를 add에 저장
     Tragectory.append(add)  #add의 값, 즉 Player의 현재(=시작) 위치를 Tragectory에 저장
     walk=0
-    if (iteration % 300 == 1 and iteration > 1):
+    if (iteration % 600 == 1 and iteration > 1):
         print "walk_average=%f,iteration=%d"%(walk_average,iteration)
     while (1):
         next = Move(Maze, Rwrd_lst, Mz_lst, Player)    #Move에서 선택된 방향을 next에 저장
@@ -342,7 +343,7 @@ while (1):
         add = copy.deepcopy(Maze)
         if (Mz_lst.count(add) == 0):
             Mz_lst.append(add)
-            Rwrd_lst.append(BasicQt)
+            Rwrd_lst.append(BasicRwrd)
             #WalkOfAction_lst.append(BasicWalk)
             add2 = len(Mz_lst) - 1
             MzIndex_lst.append(add2)
@@ -354,7 +355,7 @@ while (1):
         add = copy.deepcopy(Player) #가능한 방향이면 옮겨진 위치를 add에 저장
         Tragectory.append(add)  # 옮겨진 위치를 Tragectory에 추가
         MoveDirection.append(next)  #선택됐던 가능한 방향을 MoveDirection에 추가
-        if (iteration % 1500 == 1 and iteration>1):
+        if (iteration % 3000 == 1 and iteration>1):
             print print_info()
             #print "%d walked" % (walk)
             print walk_average
