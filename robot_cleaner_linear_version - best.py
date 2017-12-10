@@ -34,7 +34,7 @@ BasicRwrd=[[[basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic
  [[0.,0.], [0.,0.], [0.,0.], [0.,0.], [0.,0.]],
  [[0.,0.], [0.,0.], [0.,0.], [0.,0.], [0.,0.]]]"""
 
-
+Best_Rwrd_lst=[]
 #BasicRwrd=[[[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]]
 Rwrd_lst=[]
 Mz_lst=[]
@@ -319,7 +319,7 @@ def Learning(Tragectory, MoveDirection, Rwrd_lst, MzIndex_lst, local_average, wa
                 Rwrd_lst[index][xp][yp][direc] = Rwrd_lst[index][xp][yp][direc] + stage*(gamma_rate*(float((global_average+local_average)/2-walk)/global_average))
 
         #gamma_rate=gamma_rate-(1./walk)
-        gamma_rate=gamma_rate*(float(walk-1)/walk)
+        #gamma_rate=gamma_rate*(float(walk-1)/walk)
 #Q값에 (local_average-walk)/local_average 를 더해 줌으로써 평균 걸음수보다 더 많이 걷는 선택을 하게 되면 Q값을 깎아서 그 쪽으로 갈 확률을 감소시킴, 반대의 경우 증가시킴.
         """if (Rwrd_lst[index][xp][yp][direc] <= 0.):
             Rwrd_lst[index][xp][yp][direc] = 1."""
@@ -376,6 +376,7 @@ Maze[Start[0]][Start[1]]=2
 add = copy.deepcopy(Maze)
 Mz_lst.append(add)
 Rwrd_lst.append(BasicRwrd)
+Best_Rwrd_lst.append(BasicRwrd)
 #WalkOfAction_lst.append(BasicWalk)
 Initialize_BasicRwrd(Input_Maze, BasicRwrd)
 MzIndex_lst=[0]
@@ -393,23 +394,25 @@ while (1):
     Tragectory.append(add)  #add의 값, 즉 Player의 현재(=시작) 위치를 Tragectory에 저장
     walk=0
     #print Rwrd_lst
-    if (iteration % 200 == 1 and iteration > 1):
-        if(before_avg<local_average):
+    if (iteration % 200 == 1 and iteration > 1):    #mini batch 개념으로 200개 단위로 진행사항을 평가한 뒤 noise와 같은 parameter들을 변화시켜 줌
+        if(before_avg<local_average):   #상황이 안 좋아지고 있으면 즉 walk가 증가 추세에 있으면
             local_sum=0.
             local_iteration=0.
             #stage = stage * decay_rate
-            stage = second_stage
-            if(noise_limit+noise_limit_add>0.5):
-                pass
+            stage = second_stage    #momentum의 초기화
+            if(noise_limit+noise_limit_add>0.4):
+                Rwrd_lst=copy.deepcopy(Best_Rwrd_lst)   #안전장치: noise가 너무 커지다보면 안 좋은 방향으로 무한히 나아갈 수 있으므로 noise가 0.4를 넘을 정도로 계속 안 좋아졌다면 Best_Rwrd_lst에 저장해 두었던 좋았던 check point로 복귀함.
+                noise_limit = noise_limit - noise_limit_add
             else:
                 noise_limit=noise_limit+noise_limit_add
-            #stage = stage / decay_rate
-        elif(before_avg>local_average):
+            #stage = stage * momentum
+        elif(before_avg>local_average): #상황이 좋아지고 있으면
             #stage = stage * (1.+200./2000.)
             #stage = stage /decay_rate
             stage = second_stage
+            Best_Rwrd_lst=copy.deepcopy(Rwrd_lst)
             if(noise_limit-noise_limit_add<0):
-                noise_limit = start_noise_limit
+                noise_limit = start_noise_limit #noise가 너무 작아져서 업데이트시 음수가 된다면 초기 noise로 복귀시킴
             else:
                 noise_limit=noise_limit-noise_limit_add
 
@@ -450,7 +453,7 @@ while (1):
 
             #second_stage=second_stage*decay_rate
 
-        if (iteration % 1000000 == 1 and iteration>1):
+        if (iteration % 10000 == 1 and iteration>1):
             print print_info()
             #print "%d walked" % (walk)
             #second_stage=restore_stage
