@@ -6,11 +6,15 @@ import math
 import random
 import copy
 import matplotlib.pyplot as plt
-Input_Maze=[[0,0,0,1,1],
-            [0,0,0,0,0],
-            [1,0,1,0,1],
-            [1,0,0,0,1],
-            [1,1,1,0,1]]
+Input_Maze=[[0,0,0,1,1,1],
+            [0,0,0,0,0,0],
+            [1,0,1,1,0,1],
+            [1,0,0,0,0,1],
+            [1,1,0,1,1,1],
+            [1,1,0,1,1,1],
+            [1,1,0,0,0,1]]
+Xsize=7
+Ysize=6 #17/12/11 업데이트 사항 : 임의의 크기의 미로를 입력받을 수 있게 됨
 
 Maze=[] #player의 지나간 궤적을 표시해 놓은 미로
 Player =[]  #플레이어의 위치를 저장하는데 Player[0][1]은 각각 세로, 가로 좌표를 뜻함
@@ -20,13 +24,30 @@ is_noise_arr=[] #noise로 인한 선택인지 아닌지 여기에 저장함.
 Start=[0,0] #시작위치
 Before=[]   #플레이어가 직전에 지났던 위치를 여기에 저장
 basic_Rwrd=20.  #reward의 시작 값 20정도면 적당한 듯
+BasicRwrd=[]
+
+for x in range(Xsize):
+    BasicRwrd.append([])
+    for y in range(Ysize):
+        BasicRwrd[x].append([])
+        for s in range(4):
+            BasicRwrd[x][y].append(basic_Rwrd)
+
+
+"""
 BasicRwrd=[[[basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd]],
  [[basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd]],
  [[basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd]],
  [[basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd]],
  [[basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd], [basic_Rwrd, basic_Rwrd, basic_Rwrd, basic_Rwrd]]]
+"""
 
-
+mini_batch_size=150 #must be integer
+print_avg_distance=20   #must be integer
+print_plot_distance=1000  #must be integer
+print_opt_distance=1501 #must be integer
+print_curt_distance=1301 #must be integer
+punish_count_limit=Xsize+Ysize
 Best_Rwrd_lst=[]    #최고로 결과가 좋았던 check point
 Rwrd_lst=[] #학습의 핵심인 Reward 저장 배열
 Mz_lst=[]   #player가 지나온 궤적이 표시된 미로
@@ -34,10 +55,10 @@ MzIndex_lst=[]  #학습 단계에서 필요 : Mz_lst와 Rwrd_lst를 이어주는
 #l_rate=0.8 #learning rate : 안 쓰고 stage변수가 그 역할을 대신 함
 local_sum=0.    #지역 평균 구할때 사용
 local_average=0.    #지역 평균(mini batch 안에서의 평균)
-local_avg_lst=[]
+local_avg_lst=[]    #지역 평균 저장용(plot할때 필요)
 
 decay_rate=0.9  #mini batch가 지나갈 때마다 점차 학습 속도를 느리게 할 때 쓰임
-momentum=1+1./200 #mini batch 안에서 점차 학습 속도를 빠르게 할 때 쓰임, 지금은 이거 안 쓰고 stage=stage*(1+1./200)으로 대체함
+momentum=1+1./mini_batch_size #mini batch 안에서 점차 학습 속도를 빠르게 할 때 쓰임, 지금은 이거 안 쓰고 stage=stage*(1+1./200)으로 대체함
 dropout_rate=0.8    #이것에 해당하는 비율만큼 학습시킴
 stage=0.5   #learning rate를 대신하는 개념
 restore_stage=0.2   #3차적으로 stage를 복귀시킬 때 이 값으로 복귀시킴 : second_stage를 고정시키기로 한 이상 이건 쓸모 없어짐
@@ -49,14 +70,16 @@ noise_limit_add=0.05    #noise_limit을 업데이트 할 때마다 이 만큼 �
 is_noise=0  #노이즈에 의한 선택이면 1, 노이즈에 의한 선택이 아니면 0
 global_sum=0.   #전역 평균 구할 때 쓰인다
 global_average=0.   #전역 평균
+min_walk=100    #최고기록 저장해 놓음
+best_Trj=[] #최단 경로 저장해 놓음
 
 
 def print_info():   #미로판을 출력함
 
    s = ""
 
-   for x in range(5):
-      for y in range (5):
+   for x in range(Xsize):
+      for y in range (Ysize):
          if ([x,y] == Player):
             s= s+ "P "
             continue
@@ -68,7 +91,7 @@ def print_info():   #미로판을 출력함
          elif (Maze[x][y] == 0):
             s = s+ "- "
          else:
-            s = s+ "+ "
+            s = s+ "@ "
       s= s+ "\n"
 
    return s
@@ -136,7 +159,7 @@ def Chk_Move(move): #주어진 방향으로 움직이는게 타당한지(즉 벽
     elif(Maze[Player[0]-1][Player[1]]==1):
         blocktest+=1
         findway =findway/2
-    if(Player[0]==4):
+    if(Player[0]==Xsize-1):
         blocktest+=1
         findway =findway/3
     elif(Maze[Player[0]+1][Player[1]]==1):
@@ -148,7 +171,7 @@ def Chk_Move(move): #주어진 방향으로 움직이는게 타당한지(즉 벽
     elif(Maze[Player[0]][Player[1]-1] == 1):
         blocktest+=1
         findway =findway/5
-    if (Player[1] == 4 ):
+    if (Player[1] == Ysize-1 ):
         blocktest += 1
         findway =findway/7
     elif(Maze[Player[0]][Player[1] + 1] == 1):
@@ -203,7 +226,7 @@ def Chk_Move(move): #주어진 방향으로 움직이는게 타당한지(즉 벽
                 Maze[Player[0]][Player[1]]=2
                 return 1;
         elif (move == 1): #Move down
-            if (Player[0] == 4):
+            if (Player[0] == Xsize-1):
                 return -1;
             else:
                 tmp = Player[0] + 1;
@@ -227,7 +250,7 @@ def Chk_Move(move): #주어진 방향으로 움직이는게 타당한지(즉 벽
                 return 1;
 
         elif (move == 3): #Move >>
-            if (Player[1] == 4):
+            if (Player[1] == Ysize-1):
                 return -1;
             else:
                 tmp = Player[1] + 1;
@@ -245,8 +268,8 @@ def Chk_Move(move): #주어진 방향으로 움직이는게 타당한지(즉 벽
 def Chk_End():
     global Reward
     check=0
-    for x in range(5):
-        for y in range(5):
+    for x in range(Xsize):
+        for y in range(Ysize):
             if(Maze[x][y]==0):
                 check+=1    #Maze값이 0인게 있으면 check를 1 증가시킴
     if(check==0 and Player==Start):
@@ -273,13 +296,12 @@ def Learning(Tragectory, MoveDirection, Rwrd_lst, MzIndex_lst, local_average, wa
         index=MzIndex_lst[-2]   #Player의 현재 위치에서의 맵 번호
 
         if(stage*(gamma_rate*(float((global_average+local_average)/2-walk)/global_average)<critical_lower_limit)):  #결과가 너무 나쁜 데이터는 학습 안 시킴 : 이상치 제거 목적
-            #print "critical!!"
             break
 
         rand=random.random()
         punish_count += 1
 
-        if(dropout_rate<rand or ((punish_count<12)and((global_average+local_average)/2<walk))  ):   #drop out에 걸러지거나 결과가 나빴을 때 12걸음은 처벌 안 함.
+        if(dropout_rate<rand or ((punish_count<punish_count_limit)and((global_average+local_average)/2<walk))  ):   #drop out에 걸러지거나 결과가 나빴을 때 12걸음은 처벌 안 함.
             if (len(MoveDirection) < 2):  # 처음 위치까지 다 학습시켰으면 Learning을 끝냄
                 break
             Tragectory.pop()  # 이미 학습시킨 칸은 날려보냄
@@ -292,10 +314,10 @@ def Learning(Tragectory, MoveDirection, Rwrd_lst, MzIndex_lst, local_average, wa
         sum=0.
         for i in range(4):  #reward들의 합이 너무 작으면 변화에 너무 민감하고, 너무 크면 변화에 너무 둔감하므로 2배로 곱하거나 반으로 나눠줌.
             sum+=Rwrd_lst[index][xp][yp][i]
-        if(sum<40):
+        if(sum<basic_Rwrd*2):
             for i in range(4):
                 Rwrd_lst[index][xp][yp][i]=Rwrd_lst[index][xp][yp][i]*2.
-        if(sum>160):
+        if(sum>basic_Rwrd*8):
             for i in range(4):
                 Rwrd_lst[index][xp][yp][i]=Rwrd_lst[index][xp][yp][i]/2.
         if(iss_noise==0 and (global_average+local_average)/2<walk): #결과가 나빴고 noise로 인한 선택이 아니면
@@ -331,23 +353,23 @@ def Learning(Tragectory, MoveDirection, Rwrd_lst, MzIndex_lst, local_average, wa
         MzIndex_lst.pop()
 
 
-def Initialize_BasicRwrd(Input_Maze, BasicRwrd):    #input maze에 적힌 정보를 바탕으로 못 가는 방향(reward=0)을 BasicRewrd에 반영시킴.
-    for x in range(5):
-        for y in range(5):
+def Initialize_BasicRwrd(Input_Maze, BasicRwrd):    #input maze에 적힌 정보를 바탕으로 못 가는 방향(reward=0)을 BasicRewrd에 반영시킴. 이렇게 하면 pre processing 효과를 얻어 초기 학습 속도가 대폭 상승함
+    for x in range(Xsize):
+        for y in range(Ysize):
             if (x == 0):
                 BasicRwrd[0][y][0] = 0.
-            elif (x == 4):
-                BasicRwrd[4][y][1] = 0.
+            elif (x == Xsize-1):
+                BasicRwrd[Xsize-1][y][1] = 0.
             if (y == 0):
                 BasicRwrd[x][0][2] = 0.
-            elif (y == 4):
-                BasicRwrd[x][4][3] = 0.
+            elif (y == Ysize-1):
+                BasicRwrd[x][Ysize-1][3] = 0.
             if (Input_Maze[x][y] == 1):
-                if (x != 4):
+                if (x != Xsize-1):
                     BasicRwrd[x + 1][y][0] = 0.
                 if (x != 0):
                     BasicRwrd[x - 1][y][1] = 0.
-                if (y != 4):
+                if (y != Ysize-1):
                     BasicRwrd[x][y + 1][2] = 0.
                 if (y != 0):
                     BasicRwrd[x][y - 1][3] = 0.
@@ -377,7 +399,7 @@ while (1):
     Tragectory.append(add)  #add의 값, 즉 Player의 현재(=시작) 위치를 Tragectory에 저장
     walk=0
     #print Rwrd_lst
-    if (iteration % 200 == 1 and iteration > 1):    #mini batch 개념으로 200개 단위로 진행사항을 평가한 뒤 noise와 같은 parameter들을 변화시켜 줌
+    if (iteration % mini_batch_size == 1 and iteration > 1):    #mini batch 개념으로 200개 단위로 진행사항을 평가한 뒤 noise와 같은 parameter들을 변화시켜 줌
         if(before_avg<local_average):   #상황이 안 좋아지고 있으면 즉 walk가 증가 추세에 있으면
             local_sum=0.
             local_iteration=0.
@@ -402,12 +424,12 @@ while (1):
 
 
         before_avg=local_average
-    if (iteration % 50 == 1 and iteration>1 ):
+    if (iteration % print_avg_distance == 1 and iteration>1 ):
         print "global_average= %f, local_average=%f,iteration=%d"%(global_average,local_average,iteration)
-        print Rwrd_lst
+        #print Rwrd_lst
         local_avg_lst.append(global_average)
 
-        if (iteration % 3500 == 1 and iteration > 1):
+        if (iteration % print_plot_distance == 1 and iteration > 1):
             plt.plot(local_avg_lst)
             plt.show()
 
@@ -422,7 +444,7 @@ while (1):
         if (Mz_lst.count(add) == 0):
             Mz_lst.append(add)
             Rwrd_lst.append(BasicRwrd)
-            #WalkOfAction_lst.append(BasicWalk)
+
             add2 = len(Mz_lst) - 1
             MzIndex_lst.append(add2)
         elif (Mz_lst.count(add) == 1):
@@ -439,7 +461,8 @@ while (1):
 
             #second_stage=second_stage*decay_rate
 
-        if (iteration % 10000 == 1 and iteration>1):
+        if (iteration % print_curt_distance == 1 and iteration>1):
+            "This is the current path."
             print print_info()
             #print "%d walked" % (walk)
             #second_stage=restore_stage
@@ -450,6 +473,10 @@ while (1):
 
         end = Chk_End()
         if (end == 1):
+            if(min_walk>=walk):
+                min_walk=walk
+                best_Trj=copy.deepcopy(Tragectory)
+
             iteration += 1
             local_iteration+=1
             global_sum+=walk
@@ -458,6 +485,16 @@ while (1):
             global_average=global_sum/iteration
             #Reward+=(local_average/walk)
             break
+    if (iteration % print_opt_distance == 1 and iteration > 1):
+        print ("This is the shortest path to the present.")
+        tmp=[]
+        tmp=copy.deepcopy(best_Trj)
+        while(1):
+            if(len(tmp)==0):
+                break
+            Player=copy.deepcopy(tmp.pop(0))
+            print print_info()
+            raw_input("")
     Tragectory.pop()  # We does't need last objective goal
     Learning(Tragectory, MoveDirection, Rwrd_lst, MzIndex_lst, local_average, walk, is_noise_arr)
     Tragectory = []
@@ -465,5 +502,3 @@ while (1):
     is_noise_arr=[]
     MzIndex_lst=[0]
     Maze = copy.deepcopy(Input_Maze)
-    """if (iteration % 500 == 0):
-        print "Iteration %d done." % (iteration)"""
