@@ -10,10 +10,9 @@ Input_Maze=[[0,0,0,1,1,1],
             [0,0,0,0,0,0],
             [1,0,1,1,0,1],
             [1,0,0,0,0,1],
-            [1,1,0,1,1,1],
-            [1,1,0,1,1,1],
+            [1,1,0,1,0,0],
             [1,1,0,0,0,1]]
-
+#Input_Maze: 0은 지나갈 수 있는 길, 1은 벽, 직사각형 형태로 만들 것. 또 고립된 섬을 만들지 말 것.
 Xsize=len(Input_Maze)
 Ysize=len(Input_Maze[0]) #17/12/11 업데이트 사항 : 임의의 크기의 미로를 입력받을 수 있게 됨
 
@@ -37,9 +36,9 @@ for x in range(Xsize):
 
 mini_batch_size=150 #must be integer
 print_avg_distance=20   #must be integer
-print_plot_distance=1000  #must be integer
-print_opt_distance=1501 #must be integer
-print_curt_distance=1301 #must be integer
+print_plot_distance=601  #must be integer
+print_opt_distance=1901 #must be integer
+print_curt_distance=2001 #must be integer
 punish_count_limit=Xsize+Ysize
 Best_Rwrd_lst=[]    #최고로 결과가 좋았던 check point
 Rwrd_lst=[] #학습의 핵심인 Reward 저장 배열
@@ -121,15 +120,13 @@ def Move(Maze, Rwrd_lst, Mz_lst, Player):  #Rwrd_lst에 저장된 확률을 바�
         index=Mz_lst.index(Maze)
         for x in range(4):
             #value = 1/(1+math.exp(-0.05*Rwrd_lst[index][Player[0]][Player[1]][x])) #sigmoid 방식
-            #value = Rwrd_lst[index][Player[0]][Player[1]][x]
-            value = math.exp(0.01 * Rwrd_lst[index][Player[0]][Player[1]][x])
+            value = Rwrd_lst[index][Player[0]][Player[1]][x]
             total = total + value   #가치값을 더해서 총 가치값을 구함
 
         move_amount = 0.0
         for x in range(4):
             #value = 1/(1+math.exp(-0.05*Rwrd_lst[index][Player[0]][Player[1]][x]))
-            #value=Rwrd_lst[index][Player[0]][Player[1]][x]
-            value = math.exp(0.01 * Rwrd_lst[index][Player[0]][Player[1]][x])
+            value=Rwrd_lst[index][Player[0]][Player[1]][x]
             move_amount = move_amount + float(value) / float(total)
             M_Prob.append(move_amount)  #가치값을 총 가치값으로 나눠서 확률을 구해서 M_Prob에 추가함
 
@@ -394,13 +391,13 @@ while (1):
     Tragectory.append(add)  #add의 값, 즉 Player의 현재(=시작) 위치를 Tragectory에 저장
     walk=0
     #print Rwrd_lst
-    if (iteration % mini_batch_size == 1 and iteration > 1):    #mini batch 개념으로 200개 단위로 진행사항을 평가한 뒤 noise와 같은 parameter들을 변화시켜 줌
+    if (iteration % mini_batch_size == 1 and iteration > 1):    #mini batch 개념으로 mini_batch_size 단위로 진행사항을 평가한 뒤 noise와 같은 parameter들을 변화시켜 줌
         if(before_avg<local_average):   #상황이 안 좋아지고 있으면 즉 walk가 증가 추세에 있으면
             local_sum=0.
             local_iteration=0.
             #stage = stage * decay_rate
             stage = second_stage    #momentum의 초기화
-            if(noise_limit+noise_limit_add>0.4):
+            if(noise_limit+noise_limit_add>0.2):
                 Rwrd_lst=copy.deepcopy(Best_Rwrd_lst)   #안전장치: noise가 너무 커지다보면 안 좋은 방향으로 무한히 나아갈 수 있으므로 noise가 0.4를 넘을 정도로 계속 안 좋아졌다면 Best_Rwrd_lst에 저장해 두었던 좋았던 check point로 복귀함.
                 noise_limit = noise_limit - noise_limit_add
             else:
@@ -424,9 +421,9 @@ while (1):
         #print Rwrd_lst
         local_avg_lst.append(global_average)
 
-        if (iteration % print_plot_distance == 1 and iteration > 1):
-            plt.plot(local_avg_lst)
-            plt.show()
+    if (iteration % print_plot_distance == 1 and iteration > 1):
+        plt.plot(local_avg_lst)
+        plt.show()
 
 
     while (1):

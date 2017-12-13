@@ -12,6 +12,17 @@ Input_Maze=[[0,0,0,1,1,1],
             [1,0,0,0,0,1],
             [1,1,0,1,0,0],
             [1,1,0,0,0,1]]
+"""
+Input_Maze=[[0,0,0,1,1,1,1],
+            [0,0,0,0,0,0,0],
+            [1,0,1,1,0,1,0],
+            [1,0,0,0,0,1,0],
+            [1,1,0,1,0,0,0],
+            [0,0,0,1,0,1,0],
+            [0,1,0,1,0,1,0],
+            [1,1,0,0,0,0,0]]
+"""
+
 #Input_Maze: 0은 지나갈 수 있는 길, 1은 벽, 직사각형 형태로 만들 것. 또 고립된 섬을 만들지 말 것.
 Xsize=len(Input_Maze)
 Ysize=len(Input_Maze[0]) #17/12/11 업데이트 사항 : 임의의 크기의 미로를 입력받을 수 있게 됨
@@ -36,9 +47,9 @@ for x in range(Xsize):
 
 mini_batch_size=150 #must be integer
 print_avg_distance=20   #must be integer
-print_plot_distance=601  #must be integer
-print_opt_distance=1901 #must be integer
-print_curt_distance=2001 #must be integer
+print_plot_distance=1001  #must be integer
+print_opt_distance=501 #must be integer
+print_curt_distance=601 #must be integer
 punish_count_limit=Xsize+Ysize
 Best_Rwrd_lst=[]    #최고로 결과가 좋았던 check point
 Rwrd_lst=[] #학습의 핵심인 Reward 저장 배열
@@ -345,7 +356,7 @@ def Learning(Tragectory, MoveDirection, Rwrd_lst, MzIndex_lst, local_average, wa
         MzIndex_lst.pop()
 
 
-def Initialize_BasicRwrd(Input_Maze, BasicRwrd):    #input maze에 적힌 정보를 바탕으로 못 가는 방향(reward=0)을 BasicRewrd에 반영시킴. 이렇게 하면 pre processing 효과를 얻어 초기 학습 속도가 대폭 상승함
+def PreTraining_BasicRwrd(Input_Maze, BasicRwrd):    #input maze에 적힌 정보를 바탕으로 못 가는 방향(reward=0)을 BasicRewrd에 반영시킴. 이렇게 하면 pre processing 효과를 얻어 초기 학습 속도가 대폭 상승함
     for x in range(Xsize):
         for y in range(Ysize):
             if (x == 0):
@@ -378,7 +389,7 @@ add = copy.deepcopy(Maze)
 Mz_lst.append(add)
 Rwrd_lst.append(BasicRwrd)
 Best_Rwrd_lst.append(BasicRwrd)
-Initialize_BasicRwrd(Input_Maze, BasicRwrd)
+PreTraining_BasicRwrd(Input_Maze, BasicRwrd)
 MzIndex_lst=[0]
 before_avg=0.   #지난번 mini batch의 평균 걸음수를 저장해 둠
 
@@ -427,7 +438,10 @@ while (1):
 
 
     while (1):
-        next = Move(Maze, Rwrd_lst, Mz_lst, Player)    #Move에서 선택된 방향을 next에 저장
+        try:
+            next = Move(Maze, Rwrd_lst, Mz_lst, Player)    #Move에서 선택된 방향을 next에 저장
+        except IndexError:
+            print (Mz_lst, Player, Maze, Rwrd_lst)
         chk = Chk_Move(next)    #next에 저장된 방향을 Chk_Move에 넣음으로써 만약 가능한 방향이면 그 쪽으로 Player를 옮기고 Before도 옮기고 1을 반환함. 불가능한 방향이면 안 옮기고 -1을 반환해서 chk에 저장.
         if (chk == -1):
             continue    #불가능한 방향이면 처음으로 돌아가게 함
@@ -453,7 +467,7 @@ while (1):
 
             #second_stage=second_stage*decay_rate
 
-        if (iteration % print_curt_distance == 1 and iteration>1):
+        if (iteration == print_curt_distance  and iteration>1):
             "This is the current path."
             print print_info()
             #print "%d walked" % (walk)
@@ -477,20 +491,25 @@ while (1):
             global_average=global_sum/iteration
             #Reward+=(local_average/walk)
             break
-    if (iteration % print_opt_distance == 1 and iteration > 1):
+    tmp2=copy.deepcopy(Player)
+    if (iteration == print_opt_distance  and iteration > 1):
         print ("This is the shortest path to the present.")
         tmp=[]
         tmp=copy.deepcopy(best_Trj)
+        Maze = copy.deepcopy(Input_Maze)
         while(1):
             if(len(tmp)==0):
                 break
             Player=copy.deepcopy(tmp.pop(0))
             print print_info()
             raw_input("")
+            Maze[Player[0]][Player[1]] = 2
+    Maze = copy.deepcopy(Input_Maze)
+    Player=copy.deepcopy(tmp2)
     Tragectory.pop()  # We does't need last objective goal
     Learning(Tragectory, MoveDirection, Rwrd_lst, MzIndex_lst, local_average, walk, is_noise_arr)
     Tragectory = []
     MoveDirection = []
     is_noise_arr=[]
     MzIndex_lst=[0]
-    Maze = copy.deepcopy(Input_Maze)
+
