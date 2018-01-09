@@ -151,7 +151,7 @@ def Move(Maze, Rwrd_lst, Mz_lst, Player):  #Rwrd_lst에 저장된 확률을 바�
 
         return next
     else:
-        print "Move error!! count is nor 0 and 1"
+        print "Move error!! count is 0 nor 1"
 def Chk_Move(move): #주어진 방향으로 움직이는게 타당한지(즉 벽이거나 장애물이 없는지) 확인한 후 타당하면 1을 반환하고 플레이어의 위치를 그 방향으로 옮기고. 타당하지 않으면 -1을 반환함
     global Before
     blocktest=0
